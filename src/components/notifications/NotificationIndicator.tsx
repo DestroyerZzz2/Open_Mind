@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import { Bell } from 'lucide-react'
 
 interface NotificationIndicatorProps {
@@ -9,8 +9,6 @@ interface NotificationIndicatorProps {
 }
 
 export default function NotificationIndicator({ className = '' }: NotificationIndicatorProps) {
-    // Create supabase client inside component but cache it
-    const supabase = createClient()
     const [unreadCount, setUnreadCount] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -18,14 +16,14 @@ export default function NotificationIndicator({ className = '' }: NotificationIn
         const fetchUnreadCount = async () => {
             setIsLoading(true)
             try {
-                const { data: { user } } = await supabase.auth.getUser()
+                const { data: { user } } = await supabaseClient.auth.getUser()
 
                 if (!user) {
                     setIsLoading(false)
                     return
                 }
 
-                const { count, error } = await supabase
+                const { count, error } = await supabaseClient
                     .from('notifications')
                     .select('*', { count: 'exact', head: true })
                     .eq('receiver_id', user.id)
@@ -44,7 +42,7 @@ export default function NotificationIndicator({ className = '' }: NotificationIn
         fetchUnreadCount()
 
         // Set up real-time subscription for new notifications
-        const channel = supabase
+        const channel = supabaseClient
             .channel('notification-changes')
             .on(
                 'postgres_changes',
@@ -71,9 +69,9 @@ export default function NotificationIndicator({ className = '' }: NotificationIn
             .subscribe()
 
         return () => {
-            supabase.removeChannel(channel)
+            supabaseClient.removeChannel(channel)
         }
-    }, [])
+    }, []) // No dependencies needed since supabaseClient is stable
 
     if (isLoading || unreadCount === 0) {
         return (
