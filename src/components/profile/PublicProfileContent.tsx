@@ -47,10 +47,12 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
 
   // Check if current user is the profile owner
   useEffect(() => {
+    let isMounted = true // Add cleanup flag
+
     const checkOwnership = async () => {
       try {
         const { data: { user } } = await supabaseClient.auth.getUser()
-        if (user) {
+        if (user && isMounted) { // Only update state if component is still mounted
           setCurrentUserId(user.id)
           setIsOwner(user.id === userId)
         }
@@ -60,9 +62,15 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
     }
 
     checkOwnership()
-  }, [userId]) // Remove supabase from dependencies
+
+    return () => {
+      isMounted = false // Cleanup flag
+    }
+  }, [userId])
 
   useEffect(() => {
+    let isMounted = true // Add cleanup flag
+
     const fetchUserAndProducts = async () => {
       try {
         // Check if profile exists (for not found state)
@@ -74,7 +82,7 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
 
         if (profileError) {
           console.error('Error fetching profile:', profileError);
-          if (profileError.code === 'PGRST116') {
+          if (profileError.code === 'PGRST116' && isMounted) {
             setProfileNotFound(true);
           }
           throw profileError;
@@ -92,8 +100,8 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
           throw productError;
         }
 
-        // Separate products into left and right displays
-        if (products) {
+        // Separate products into left and right displays - only update if component is still mounted
+        if (products && isMounted) {
           const typedProducts = products as Product[];
           const left = typedProducts.filter((product) => product.display_section === 'left');
           const right = typedProducts.filter((product) => product.display_section === 'right');
@@ -105,14 +113,20 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
       } catch (error) {
         console.error('Error:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     if (userId) {
       fetchUserAndProducts();
     }
-  }, [userId]); // Remove supabase from dependencies
+
+    return () => {
+      isMounted = false // Cleanup flag
+    }
+  }, [userId]);
   // Apply tag filter when tagFilter changes
   useEffect(() => {
     if (!tagFilter) {
