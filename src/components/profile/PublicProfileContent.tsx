@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useRef } from 'react'
 import { supabaseClient } from '@/utils/supabase'
 import ReadOnlyProductCard from '@/components/intrests/ReadOnlyIntrestsCard'
 import ProductCard, { DEFAULT_TAG } from '@/components/intrests/IntrestCard'
@@ -45,14 +45,24 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
   const [showRightForm, setShowRightForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined)
 
+  // Add refs to prevent multiple executions
+  const authCheckExecuted = useRef(false)
+  const dataFetchExecuted = useRef(false)
+  const currentUserIdRef = useRef<string | null>(null)
+
   // Check if current user is the profile owner
   useEffect(() => {
-    let isMounted = true // Add cleanup flag
+    // Prevent multiple executions with ref guard
+    if (authCheckExecuted.current) return
+    authCheckExecuted.current = true
+
+    let isMounted = true
 
     const checkOwnership = async () => {
       try {
         const { data: { user } } = await supabaseClient.auth.getUser()
-        if (user && isMounted) { // Only update state if component is still mounted
+        if (user && isMounted) {
+          currentUserIdRef.current = user.id
           setCurrentUserId(user.id)
           setIsOwner(user.id === userId)
         }
@@ -64,12 +74,17 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
     checkOwnership()
 
     return () => {
-      isMounted = false // Cleanup flag
+      isMounted = false
+      authCheckExecuted.current = false // Reset on unmount
     }
   }, [userId])
 
   useEffect(() => {
-    let isMounted = true // Add cleanup flag
+    // Prevent multiple executions with ref guard
+    if (dataFetchExecuted.current) return
+    dataFetchExecuted.current = true
+
+    let isMounted = true
 
     const fetchUserAndProducts = async () => {
       try {
@@ -124,7 +139,8 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
     }
 
     return () => {
-      isMounted = false // Cleanup flag
+      isMounted = false
+      dataFetchExecuted.current = false // Reset on unmount
     }
   }, [userId]);
   // Apply tag filter when tagFilter changes
