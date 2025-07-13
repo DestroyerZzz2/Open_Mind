@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import { Database } from '@/types/database'
 import { v4 as uuidv4 } from 'uuid'
 import SupabaseImage from '../ui/SupabaseImage'
@@ -59,7 +59,6 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
   const titleInputRef = useRef<HTMLInputElement>(null)
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null)
 
-  const supabase = createClient()
   const isEditing = !!product
 
   useEffect(() => {
@@ -180,7 +179,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
     const otherSection = section === 'left' ? 'right' : 'left'
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('products')
         .select('*')  // Select all fields to get complete product data
         .eq('user_id', userId)
@@ -212,7 +211,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('products')
         .select('*') // Select all fields to get complete product data
         .eq('user_id', userId)
@@ -290,7 +289,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
         const imagePath = duplicateProduct.image_url.split('/').pop()
         if (imagePath) {
           try {
-            await supabase.storage
+            await supabaseClient.storage
               .from('product_images')
               .remove([`${userId}/${imagePath}`])
           } catch (error) {
@@ -301,7 +300,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
       }
 
       // Delete the product from the database
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseClient
         .from('products')
         .delete()
         .eq('id', duplicateProduct.id)
@@ -443,7 +442,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
         // Log size of optimized image for monitoring
         console.log(`Uploading optimized interest image: ${image.size / 1024} KB`)
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClient.storage
           .from('product_images')
           .upload(fileName, image)
 
@@ -451,7 +450,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
           throw new Error(`Error uploading image: ${uploadError.message}`)
         }
 
-        const { data } = supabase.storage.from('product_images').getPublicUrl(fileName)
+        const { data } = supabaseClient.storage.from('product_images').getPublicUrl(fileName)
         imageUrl = data.publicUrl
 
         // Delete old image if updating
@@ -459,7 +458,7 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
           const oldImagePath = product.image_url.split('/').pop()
           if (oldImagePath) {
             try {
-              await supabase.storage.from('product_images').remove([`${userId}/${oldImagePath}`])
+              await supabaseClient.storage.from('product_images').remove([`${userId}/${oldImagePath}`])
             } catch (deleteError) {
               // Log but don't fail if old image deletion fails
               console.error('Error deleting old image:', deleteError)
@@ -497,14 +496,14 @@ export default function ProductForm({ userId, product, section, onComplete, onCa
       }
 
       if (isEditing && product?.id) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseClient
           .from('products')
           .update(productData)
           .eq('id', product.id)
 
         if (updateError) throw new Error(`Error updating product: ${updateError.message}`)
       } else {
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseClient
           .from('products')
           .insert(productData)
 
