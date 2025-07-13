@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Database } from '@/types/database'
 import SupabaseImage from '../ui/SupabaseImage'
 import { Tag, Share, AlertCircle } from 'lucide-react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import toast from 'react-hot-toast'
 import ShareDialog from '../ui/ShareDialog'
 
@@ -25,7 +25,6 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
   const [isSharing, setIsSharing] = useState(false)
   const [isHighlighted, setIsHighlighted] = useState(false)
 
-  const supabase = createClient()
   useEffect(() => {
     let img: HTMLImageElement | null = null;
 
@@ -115,7 +114,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
     setIsSharing(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
 
       if (!user) {
         toast.error(
@@ -138,7 +137,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
       }
 
       // First check if the product already exists in the selected section
-      const { data: existingInSection, error: sectionCheckError } = await supabase
+      const { data: existingInSection, error: sectionCheckError } = await supabaseClient
         .from('products')
         .select('*')
         .eq('user_id', user.id)
@@ -169,7 +168,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
 
       // Then check if the product exists in the other section
       const otherSection = section === 'left' ? 'right' : 'left';
-      const { data: existingInOtherSection, error: otherSectionCheckError } = await supabase
+      const { data: existingInOtherSection, error: otherSectionCheckError } = await supabaseClient
         .from('products')
         .select('*')
         .eq('user_id', user.id)
@@ -210,7 +209,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
                         toast.dismiss(t.id);
 
                         // Delete from other section
-                        const { error: deleteError } = await supabase
+                        const { error: deleteError } = await supabaseClient
                           .from('products')
                           .delete()
                           .eq('id', existingInOtherSection[0].id);
@@ -230,7 +229,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
                           user_id: user.id
                         };
 
-                        const { error: insertError } = await supabase
+                        const { error: insertError } = await supabaseClient
                           .from('products')
                           .insert(newProduct);
 
@@ -273,7 +272,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
       };
 
       // Insert the product into the user's collection
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('products')
         .insert(newProduct);
 
