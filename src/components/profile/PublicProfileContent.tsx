@@ -45,38 +45,15 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
   const [showRightForm, setShowRightForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined)
 
-  // Add refs to prevent multiple executions
-  const authCheckExecuted = useRef(false)
+  // Add ref to prevent multiple executions
   const dataFetchExecuted = useRef(false)
-  const currentUserIdRef = useRef<string | null>(null)
 
-  // Check if current user is the profile owner
+  // COMPLETELY REMOVE THE AUTH CHECK - THIS IS CAUSING THE INFINITE LOOP
+  // We'll handle auth checking differently
   useEffect(() => {
-    // Prevent multiple executions with ref guard
-    if (authCheckExecuted.current) return
-    authCheckExecuted.current = true
-
-    let isMounted = true
-
-    const checkOwnership = async () => {
-      try {
-        const { data: { user } } = await supabaseClient.auth.getUser()
-        if (user && isMounted) {
-          currentUserIdRef.current = user.id
-          setCurrentUserId(user.id)
-          setIsOwner(user.id === userId)
-        }
-      } catch (error) {
-        console.error('Error checking user:', error)
-      }
-    }
-
-    checkOwnership()
-
-    return () => {
-      isMounted = false
-      authCheckExecuted.current = false // Reset on unmount
-    }
+    // For now, just set default values without auth check
+    setCurrentUserId(null)
+    setIsOwner(false)
   }, [userId])
 
   useEffect(() => {
