@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import Link from 'next/link'
 import SupabaseImage from '@/components/ui/SupabaseImage'
 import { formatDistanceToNow } from 'date-fns'
@@ -37,9 +37,6 @@ interface Notification {
     is_like?: boolean
 }
 
-// Create supabase client OUTSIDE the component so it's referentially stable
-const supabase = createClient()
-
 export default function NotificationsContent() {
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -49,11 +46,11 @@ export default function NotificationsContent() {
     useEffect(() => {
         const markAllAsRead = async () => {
             try {
-                const { data: { user } } = await supabase.auth.getUser()
+                const { data: { user } } = await supabaseClient.auth.getUser()
                 if (!user) return
                 setCurrentUserId(user.id)
 
-                await supabase
+                await supabaseClient
                     .from('notifications')
                     .update({ read: true })
                     .eq('receiver_id', user.id)
@@ -71,13 +68,13 @@ export default function NotificationsContent() {
         const fetchNotifications = async () => {
             setIsLoading(true)
             try {
-                const { data: { user } } = await supabase.auth.getUser()
+                const { data: { user } } = await supabaseClient.auth.getUser()
                 if (!user) {
                     setIsLoading(false)
                     return
                 }
 
-                const { data: initialData, error } = await supabase
+                const { data: initialData, error } = await supabaseClient
                     .from('notifications')
                     .select(`
                         *,
@@ -102,7 +99,7 @@ export default function NotificationsContent() {
                     )
 
                     if (interestNotifications.length > 0) {
-                        const { data: interests, error: interestError } = await supabase
+                        const { data: interests, error: interestError } = await supabaseClient
                             .from('products')
                             .select('id, title, display_section')
                             .in('id', interestNotifications.map(n => n.entity_id))
@@ -143,7 +140,7 @@ export default function NotificationsContent() {
         fetchNotifications()
 
         // Real-time subscription
-        const channel = supabase
+        const channel = supabaseClient
             .channel('new-notifications')
             .on('postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'notifications' },
@@ -152,7 +149,7 @@ export default function NotificationsContent() {
             .subscribe()
 
         return () => {
-            supabase.removeChannel(channel)
+            supabaseClient.removeChannel(channel)
         }
     }, [])
 
@@ -234,7 +231,7 @@ export default function NotificationsContent() {
                         onClick={async () => {
                             try {
                                 if (!currentUserId) return
-                                const { error } = await supabase
+                                const { error } = await supabaseClient
                                     .from('notifications')
                                     .update({ read: true })
                                     .eq('receiver_id', currentUserId)
