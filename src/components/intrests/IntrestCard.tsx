@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import { Database } from '@/types/database'
 import SupabaseImage from '../ui/SupabaseImage'
 import ConfirmationDialog from '../ui/ConfirmationDialog'
@@ -40,7 +40,6 @@ export default function ProductCard({
   const [showDropdown, setShowDropdown] = useState(false)
   const [isHighlighted, setIsHighlighted] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
 
   // Use onImageUpdate if provided, otherwise fall back to onEdit
   const handleImageChange = onImageUpdate || onEdit;
@@ -54,7 +53,7 @@ export default function ProductCard({
 
     // Check if the current user is the author of this product
     const checkAuthor = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       setIsAuthor(user?.id === product.user_id);
     };
 
@@ -71,7 +70,7 @@ export default function ProductCard({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [product.image_url, product.user_id, supabase]);
+  }, [product.image_url, product.user_id]); // Remove supabase from dependencies
   // Check if this product should be highlighted based on URL fragment
   useEffect(() => {
     // Check if the URL fragment targets this product
@@ -114,11 +113,11 @@ export default function ProductCard({
       if (product.image_url) {
         const imagePath = new URL(product.image_url).pathname.split('/').pop()
         if (imagePath) {
-          await supabase.storage.from('product_images').remove([imagePath])
+          await supabaseClient.storage.from('product_images').remove([imagePath])
         }
       }
 
-      await supabase
+      await supabaseClient
         .from('products')
         .delete()
         .eq('id', product.id)
@@ -141,7 +140,7 @@ export default function ProductCard({
 
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -194,7 +193,7 @@ export default function ProductCard({
       }, 200);
 
       // Now use optimizedFile instead of original file
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabaseClient.storage
         .from('product_images')
         .upload(fileName, optimizedFile);
 
@@ -211,7 +210,7 @@ export default function ProductCard({
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = supabaseClient.storage
         .from('product_images')
         .getPublicUrl(fileName);
 
@@ -220,7 +219,7 @@ export default function ProductCard({
       }
 
       // Update product with image URL
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseClient
         .from('products')
         .update({ image_url: urlData.publicUrl })
         .eq('id', product.id);
