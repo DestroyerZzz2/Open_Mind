@@ -47,18 +47,19 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
 
   // Add ref to prevent multiple executions
   const dataFetchExecuted = useRef(false)
-  const [authChecked, setAuthChecked] = useState(false)
+  // Use ref to track if auth has been checked for this userId
+  const authCheckRef = useRef<string | null>(null)
 
-  // Reset auth check when userId changes
+  // Only check auth once per userId using ref tracking
   useEffect(() => {
-    setAuthChecked(false)
-  }, [userId])
+    // Skip if already checked for this userId
+    if (authCheckRef.current === userId) return
 
-  // Safe auth check that runs only once per userId
-  useEffect(() => {
-    if (authChecked) return // Prevent multiple executions
+    // Mark as checking for this userId
+    authCheckRef.current = userId
 
-    const checkAuth = async () => {
+    // Simple timeout to prevent any possible loops
+    const timeoutId = setTimeout(async () => {
       try {
         const { data: { user } } = await supabaseClient.auth.getUser()
         if (user) {
@@ -72,13 +73,11 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
         console.error('Error checking auth:', error)
         setCurrentUserId(null)
         setIsOwner(false)
-      } finally {
-        setAuthChecked(true)
       }
-    }
+    }, 100) // Small delay to prevent immediate execution
 
-    checkAuth()
-  }, [authChecked]) // Only depend on authChecked, not userId
+    return () => clearTimeout(timeoutId)
+  }, [userId])
 
   useEffect(() => {
     // Prevent multiple executions with ref guard
