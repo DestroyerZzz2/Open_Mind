@@ -4,7 +4,7 @@
 import Link from 'next/link'
 import { LogIn, UserPlus, Menu, X, Home, Settings, LogOut, User as UserIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import NotificationIndicator from '@/components/notifications/NotificationIndicator'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 
@@ -12,12 +12,12 @@ export default function PublicProfileLayout({ children }: { children: React.Reac
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const supabase = createClient()
+
   // Check authentication status and listen for changes
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await supabaseClient.auth.getUser()
         setIsAuthenticated(!!user)
       } catch (error) {
         console.error('Error checking auth:', error)
@@ -28,18 +28,18 @@ export default function PublicProfileLayout({ children }: { children: React.Reac
     checkAuth()
 
     // Listen for auth state changes (important for OAuth flows)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       setIsAuthenticated(!!session?.user)
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, []) // Remove supabase from dependencies since it's now stable
 
   // Handle logout
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      await supabase.auth.signOut()
+      await supabaseClient.auth.signOut()
       window.location.href = '/login'
     } catch (error) {
       console.error('Error logging out:', error)
