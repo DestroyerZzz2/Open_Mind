@@ -51,13 +51,9 @@ export default function ProductCard({
       img.onload = () => setIsImageLoaded(true);
     }
 
-    // Check if the current user is the author of this product
-    const checkAuthor = async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      setIsAuthor(user?.id === product.user_id);
-    };
-
-    checkAuthor();
+    // REMOVE AUTH CHECK - parent component already determined ownership
+    // Since this component is only rendered in owner mode, assume true
+    setIsAuthor(true);
 
     // Add click outside listener for dropdown
     const handleClickOutside = (event: MouseEvent) => {
