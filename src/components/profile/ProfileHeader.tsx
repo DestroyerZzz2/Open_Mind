@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import SupabaseImage from '@/components/ui/SupabaseImage'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -38,7 +38,6 @@ export default function ProfileHeader({
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const [, startTransition] = useTransition();
 
   // Ensure the local state tracks the prop
@@ -85,7 +84,7 @@ export default function ProfileHeader({
   useEffect(() => {
     const checkOwnership = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await supabaseClient.auth.getUser()
 
         if (user) {
           setIsOwner(user.id === userId)
@@ -96,13 +95,13 @@ export default function ProfileHeader({
     }
 
     checkOwnership()
-  }, [supabase, userId])
+  }, [userId]) // Remove supabase from dependencies
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         // Get user profile details FIRST and show immediately
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error: profileError } = await supabaseClient
           .from('profiles')
           .select('full_name, avatar_url, cover_image_url, username')
           .eq('id', userId)
@@ -129,11 +128,11 @@ export default function ProfileHeader({
 
         // Fetch counts in parallel (non-blocking)
         const [interestsResult, postsResult] = await Promise.all([
-          supabase
+          supabaseClient
             .from('products')
             .select('id', { count: 'exact' })
             .eq('user_id', userId),
-          supabase
+          supabaseClient
             .from('posts')
             .select('id', { count: 'exact' })
             .eq('user_id', userId)
@@ -156,7 +155,7 @@ export default function ProfileHeader({
     if (userId) {
       fetchUserProfile();
     }
-  }, [userId, supabase]);
+  }, [userId]); // Remove supabase from dependencies
 
   if (isLoading) {
     return (
