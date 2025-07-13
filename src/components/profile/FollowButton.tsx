@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import toast from 'react-hot-toast'
 import { UserPlus, UserMinus } from 'lucide-react'
 
@@ -10,8 +10,6 @@ interface FollowButtonProps {
 }
 
 export default function FollowButton({ targetUserId, className = '' }: FollowButtonProps) {
-    // Create supabase client inside component but cache it
-    const supabase = createClient()
     const [isFollowing, setIsFollowing] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -19,7 +17,7 @@ export default function FollowButton({ targetUserId, className = '' }: FollowBut
     const checkFollowStatus = useCallback(
         async (userId: string) => {
             try {
-                const { data } = await supabase
+                const { data } = await supabaseClient
                     .from('follows')
                     .select('*')
                     .eq('follower_id', userId)
@@ -31,13 +29,13 @@ export default function FollowButton({ targetUserId, className = '' }: FollowBut
                 console.error('Error checking follow status:', error)
             }
         },
-        [targetUserId], // supabase is now stable, so only targetUserId is needed here
+        [targetUserId]
     )
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const { data } = await supabase.auth.getUser()
+                const { data } = await supabaseClient.auth.getUser()
                 if (data.user) {
                     setCurrentUserId(data.user.id)
                     await checkFollowStatus(data.user.id)
@@ -48,7 +46,7 @@ export default function FollowButton({ targetUserId, className = '' }: FollowBut
         }
 
         checkAuth()
-    }, [targetUserId, checkFollowStatus]) // No supabase.auth dependency needed anymore
+    }, [targetUserId, checkFollowStatus])
 
     const handleFollow = async () => {
         if (!currentUserId) {
@@ -66,7 +64,7 @@ export default function FollowButton({ targetUserId, className = '' }: FollowBut
         try {
             if (isFollowing) {
                 // Unfollow
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('follows')
                     .delete()
                     .match({ follower_id: currentUserId, following_id: targetUserId })
@@ -77,7 +75,7 @@ export default function FollowButton({ targetUserId, className = '' }: FollowBut
                 toast.success('Вы отписались')
             } else {
                 // Follow
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('follows')
                     .insert({
                         follower_id: currentUserId,
