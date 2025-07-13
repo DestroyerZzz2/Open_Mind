@@ -3,12 +3,11 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import PublicProfileContent from '@/components/profile/PublicProfileContent'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 
 export default function PublicProfilePage() {
   const params = useParams()
   const router = useRouter()
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [actualUserId, setActualUserId] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -22,7 +21,7 @@ export default function PublicProfilePage() {
         setIsLoading(true)
 
         // First try to find profile by username
-        const { data: profileByUsername } = await supabase
+        const { data: profileByUsername } = await supabaseClient
           .from('profiles')
           .select('id')
           .eq('username', profileIdentifier)
@@ -34,7 +33,7 @@ export default function PublicProfilePage() {
         }
 
         // If not found by username, try to find by user ID
-        const { data: profileById } = await supabase
+        const { data: profileById } = await supabaseClient
           .from('profiles')
           .select('id, username')
           .eq('id', profileIdentifier)
@@ -63,7 +62,7 @@ export default function PublicProfilePage() {
     if (profileIdentifier) {
       resolveProfileIdentifier()
     }
-  }, [profileIdentifier, supabase, router])
+  }, [profileIdentifier, router]) // Remove supabase from dependencies
 
   if (isLoading) {
     return (
