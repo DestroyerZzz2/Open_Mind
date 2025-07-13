@@ -47,14 +47,38 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
 
   // Add ref to prevent multiple executions
   const dataFetchExecuted = useRef(false)
+  const [authChecked, setAuthChecked] = useState(false)
 
-  // COMPLETELY REMOVE THE AUTH CHECK - THIS IS CAUSING THE INFINITE LOOP
-  // We'll handle auth checking differently
+  // Reset auth check when userId changes
   useEffect(() => {
-    // For now, just set default values without auth check
-    setCurrentUserId(null)
-    setIsOwner(false)
+    setAuthChecked(false)
   }, [userId])
+
+  // Safe auth check that runs only once per userId
+  useEffect(() => {
+    if (authChecked) return // Prevent multiple executions
+
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser()
+        if (user) {
+          setCurrentUserId(user.id)
+          setIsOwner(user.id === userId)
+        } else {
+          setCurrentUserId(null)
+          setIsOwner(false)
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error)
+        setCurrentUserId(null)
+        setIsOwner(false)
+      } finally {
+        setAuthChecked(true)
+      }
+    }
+
+    checkAuth()
+  }, [authChecked]) // Only depend on authChecked, not userId
 
   useEffect(() => {
     // Prevent multiple executions with ref guard
