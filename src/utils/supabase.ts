@@ -10,12 +10,14 @@ const originalClient = createBrowserClient(
 // Counter to track auth requests
 let authCallCount = 0
 
-// Wrap the auth.getUser method to add debugging
+// Wrap the auth.getUser method to add debugging with full stack trace
 const originalGetUser = originalClient.auth.getUser.bind(originalClient.auth)
 originalClient.auth.getUser = async () => {
   authCallCount++
-  if (authCallCount % 10 === 0) { // Log every 10th call to reduce spam in console
-    console.log(`🔥 AUTH REQUEST #${authCallCount} - CALLED FROM:`, new Error().stack?.split('\n')[2])
+  if (authCallCount % 5 === 0) { // Log every 5th call
+    console.log(`🚨 AUTH REQUEST #${authCallCount}`)
+    console.log('FULL STACK TRACE:', new Error().stack)
+    console.log('-------------------')
   }
   return originalGetUser()
 }
