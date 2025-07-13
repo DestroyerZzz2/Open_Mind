@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import FeedItem from '@/components/feed/FeedItem'
 import { Database } from '@/types/database'
 import { RotateCw } from 'lucide-react'
@@ -26,9 +26,6 @@ export default function FeedContent() {
     // Constants
     const itemsPerPage = 10
 
-    // Hooks
-    const supabase = createClient()
-
     useEffect(() => {
         fetchFeed()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -40,7 +37,7 @@ export default function FeedContent() {
 
         try {
             // First fetch products with descriptions
-            const { data: products, error: productsError } = await supabase
+            const { data: products, error: productsError } = await supabaseClient
                 .from('products')
                 .select('*')
                 .not('description', 'is', null)
@@ -60,7 +57,7 @@ export default function FeedContent() {
 
             // Then fetch the associated profiles
             const userIds = products.map((product: Database['public']['Tables']['products']['Row']) => product.user_id)
-            const { data: profiles, error: profilesError } = await supabase
+            const { data: profiles, error: profilesError } = await supabaseClient
                 .from('profiles')
                 .select('id, username, full_name, avatar_url')
                 .in('id', userIds)
@@ -99,7 +96,7 @@ export default function FeedContent() {
         setIsLoading(true)
         try {
             // First fetch the next page of products with descriptions
-            const { data: moreProducts, error: productsError } = await supabase
+            const { data: moreProducts, error: productsError } = await supabaseClient
                 .from('products')
                 .select('*')
                 .not('description', 'is', null)
@@ -118,7 +115,7 @@ export default function FeedContent() {
 
             // Then fetch the associated profiles
             const userIds = moreProducts.map((product: Database['public']['Tables']['products']['Row']) => product.user_id)
-            const { data: profiles, error: profilesError } = await supabase
+            const { data: profiles, error: profilesError } = await supabaseClient
                 .from('profiles')
                 .select('id, username, full_name, avatar_url')
                 .in('id', userIds)
