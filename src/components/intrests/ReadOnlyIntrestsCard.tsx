@@ -114,6 +114,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
     setIsSharing(true);
 
     try {
+      // Only check auth when user actually clicks share - not on render
       const { data: { user } } = await supabaseClient.auth.getUser();
 
       if (!user) {
@@ -133,6 +134,7 @@ export default function ReadOnlyProductCard({ product, onTagClick }: ReadOnlyPro
           </div>,
           { duration: 5000 }
         );
+        setIsSharing(false);
         return;
       }
 
