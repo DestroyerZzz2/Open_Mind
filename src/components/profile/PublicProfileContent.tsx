@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { createClient } from '@/utils/supabase'
+import { supabaseClient } from '@/utils/supabase'
 import ReadOnlyProductCard from '@/components/intrests/ReadOnlyIntrestsCard'
 import ProductCard, { DEFAULT_TAG } from '@/components/intrests/IntrestCard'
 import ProductForm from '@/components/intrests/IntrestsForm'
@@ -33,7 +33,6 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
   }>({})
   const [isLoading, setIsLoading] = useState(true)
   const [profileNotFound, setProfileNotFound] = useState(false)
-  const supabase = createClient()
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -50,7 +49,7 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
   useEffect(() => {
     const checkOwnership = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await supabaseClient.auth.getUser()
         if (user) {
           setCurrentUserId(user.id)
           setIsOwner(user.id === userId)
@@ -61,13 +60,13 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
     }
 
     checkOwnership()
-  }, [supabase, userId])
+  }, [userId]) // Remove supabase from dependencies
 
   useEffect(() => {
     const fetchUserAndProducts = async () => {
       try {
         // Check if profile exists (for not found state)
-        const { error: profileError } = await supabase
+        const { error: profileError } = await supabaseClient
           .from('profiles')
           .select('id')
           .eq('id', userId)
@@ -82,7 +81,7 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
         }
 
         // Fetch products for the user
-        const { data: products, error: productError } = await supabase
+        const { data: products, error: productError } = await supabaseClient
           .from('products')
           .select('*')
           .eq('user_id', userId)
@@ -113,7 +112,7 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
     if (userId) {
       fetchUserAndProducts();
     }
-  }, [userId, supabase]);
+  }, [userId]); // Remove supabase from dependencies
   // Apply tag filter when tagFilter changes
   useEffect(() => {
     if (!tagFilter) {
@@ -271,7 +270,7 @@ export default function PublicProfileContent({ userId }: PublicProfileContentPro
     if (userId) {
       setIsLoading(true)
       try {
-        const { data: products, error } = await supabase
+        const { data: products, error } = await supabaseClient
           .from('products')
           .select('*')
           .eq('user_id', userId)
